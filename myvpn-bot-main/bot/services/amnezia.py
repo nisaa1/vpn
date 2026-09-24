@@ -1,4 +1,4 @@
-"""Установка, удаление и peer-менеджмент AmneziaWG на удалённом VPS через SSH."""
+"""Установка, удаление и peer-менеджмент AmneziaWG 3.1 на удалённом VPS через SSH."""
 from __future__ import annotations
 
 import json
@@ -18,6 +18,9 @@ WG_CONF_PATH = f"{WG_CONF_DIR}/{WG_INTERFACE}.conf"
 # H1..H4 ОБЯЗАНЫ отличаться от magic-чисел WireGuard handshake (1..4),
 # иначе обфускация ломает рукопожатие.
 _FORBIDDEN_H = {1, 2, 3, 4}
+
+# Версия AmneziaWG для установки
+AMNEZIAWG_VERSION = "3.1*"
 
 ProgressCb = Callable[[str], Awaitable[None]]
 
@@ -130,10 +133,10 @@ async def _install_amneziawg(ssh: SSHClient, progress: ProgressCb) -> None:
         'dkms build-essential "linux-headers-$(uname -r)"',
         check=True,
     )
-    await progress("Ставлю <code>amneziawg</code> + <code>amneziawg-tools</code>...")
+    await progress(f"Ставлю <code>amneziawg {AMNEZIAWG_VERSION}</code> + <code>amneziawg-tools {AMNEZIAWG_VERSION}</code>...")
     await ssh.run(
         "DEBIAN_FRONTEND=noninteractive apt-get install -y "
-        "amneziawg amneziawg-tools",
+        f"'amneziawg={AMNEZIAWG_VERSION}' 'amneziawg-tools={AMNEZIAWG_VERSION}'",
         check=True,
     )
     # Форсим сборку модуля под текущее ядро — если DKMS не собрал на этапе
@@ -230,7 +233,7 @@ async def install_amneziawg(
     subnet: str = "10.8.0.0/24",
     progress: ProgressCb,
 ) -> InstallResult:
-    """Полный сценарий установки AmneziaWG на чистую Ubuntu 22.04+/Debian."""
+    """Полный сценарий установки AmneziaWG 3.1 на чистую Ubuntu 22.04+/Debian."""
     os_release = await ssh.run("cat /etc/os-release", check=True)
     if "ubuntu" not in os_release.stdout.lower() and "debian" not in os_release.stdout.lower():
         raise SSHError("Поддерживаются только Ubuntu/Debian-based дистрибутивы")
